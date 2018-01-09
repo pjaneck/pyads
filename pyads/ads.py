@@ -8,7 +8,7 @@
 import struct
 from ctypes import memmove, addressof, c_ubyte
 
-from .utils import platform_is_linux
+from .utils import extended_functions_supported
 from .filetimes import filetime_to_dt
 
 from .pyads import (
@@ -38,7 +38,7 @@ from .constants import (
 
 from .structs import AmsAddr
 
-linux = platform_is_linux()
+extended = extended_functions_supported()
 port = None
 
 
@@ -51,7 +51,7 @@ def open_port():
     """
     global port
 
-    if linux:
+    if extended:
         port = port or adsPortOpenEx()
         return port
 
@@ -65,7 +65,7 @@ def close_port():
     """
     global port
 
-    if linux:
+    if extended:
         adsPortCloseEx(port)
         port = None
         return
@@ -79,7 +79,7 @@ def get_local_address():
     :rtype: AmsAddr
 
     """
-    if linux:
+    if extended:
         return adsGetLocalAddressEx(port)
 
     return adsGetLocalAddress()
@@ -94,7 +94,7 @@ def read_state(adr):
     :return: adsState, deviceState
 
     """
-    if linux:
+    if extended:
         return adsSyncReadStateReqEx(port, adr)
 
     return adsSyncReadStateReq(adr)
@@ -120,7 +120,7 @@ def write_control(adr, ads_state, device_state, data, plc_datatype):
            are defined in the ADS-specification.
 
     """
-    if linux:
+    if extended:
         return adsSyncWriteControlReqEx(
             port, adr, ads_state, device_state, data, plc_datatype
         )
@@ -138,7 +138,7 @@ def read_device_info(adr):
     :return: device name, version
 
     """
-    if linux:
+    if extended:
         return adsSyncReadDeviceInfoReqEx(port, adr)
 
     return adsSyncReadDeviceInfoReq(adr)
@@ -157,7 +157,7 @@ def write(adr, index_group, index_offset, value, plc_datatype):
         according to PLCTYPE constants
 
     """
-    if linux:
+    if extended:
         return adsSyncWriteReqEx(
             port, adr, index_group, index_offset, value, plc_datatype
         )
@@ -182,7 +182,7 @@ def read_write(adr, index_group, index_offset, plc_read_datatype,
     :return: value: **value**
 
     """
-    if linux:
+    if extended:
         return adsSyncReadWriteReqEx2(
             port, adr, index_group, index_offset, plc_read_datatype,
             value, plc_write_datatype
@@ -206,7 +206,7 @@ def read(adr, index_group, index_offset, plc_datatype):
     :return: value: **value**
 
     """
-    if linux:
+    if extended:
         return adsSyncReadReqEx2(
             port, adr, index_group, index_offset, plc_datatype
         )
@@ -224,7 +224,7 @@ def read_by_name(adr, data_name, plc_datatype):
     :return: value: **value**
 
     """
-    if linux:
+    if extended:
         return adsSyncReadByNameEx(port, adr, data_name, plc_datatype)
 
     return adsSyncReadByName(adr, data_name, plc_datatype)
@@ -241,7 +241,7 @@ def write_by_name(adr, data_name, value, plc_datatype):
         according to PLCTYPE constants
 
     """
-    if linux:
+    if extended:
         return adsSyncWriteByNameEx(port, adr, data_name, value, plc_datatype)
 
     return adsSyncWriteByName(adr, data_name, value, plc_datatype)
@@ -249,7 +249,7 @@ def write_by_name(adr, data_name, value, plc_datatype):
 
 def add_route(adr, ip_address):
     """
-    :summary:  Establish a new route in the AMS Router (linux Only).
+    :summary:  Establish a new route in the AMS Router (Linux Only).
 
     :param pyads.structs.AmsAddr adr: AMS Address of routing endpoint
     :param str ip_address: ip address of the routing endpoint
@@ -287,7 +287,7 @@ def add_device_notification(adr, data_name, attr, callback, user_handle=None):
     later in your code.
 
     """
-    if linux:
+    if extended:
         return adsSyncAddDeviceNotificationReqEx(port, adr, data_name, attr,
                                                  callback, user_handle)
     else:
@@ -306,7 +306,7 @@ def del_device_notification(adr, notification_handle, user_handle):
     :param user_handle: user handle
 
     """
-    if linux:
+    if extended:
         adsSyncDelDeviceNotificationReqEx(port, adr, notification_handle,
                                           user_handle)
     else:
@@ -315,7 +315,7 @@ def del_device_notification(adr, notification_handle, user_handle):
 
 
 def set_timeout(ms):
-    if linux:
+    if extended:
         adsSyncSetTimeoutEx(port, ms)
     else:
         adsSyncSetTimeout(ms)
@@ -358,7 +358,7 @@ class Connection(object):
         """
         if self._open:
             return
-        if linux:
+        if extended:
             self._port = adsPortOpenEx()
             adsAddRoute(self._adr.netIdStruct(), self.ip_address)
         else:
@@ -372,7 +372,7 @@ class Connection(object):
         """
         if not self._open:
             return
-        if linux:
+        if extended:
             adsDelRoute(self._adr.netIdStruct())
             adsPortCloseEx(self._port)
             self._port = None
@@ -386,7 +386,7 @@ class Connection(object):
         :rtype: AmsAddr
 
         """
-        if linux:
+        if extended:
             return adsGetLocalAddressEx(self._port)
         else:
             return adsGetLocalAddress()
@@ -399,7 +399,7 @@ class Connection(object):
         :return: adsState, deviceState
 
         """
-        if linux:
+        if extended:
             return adsSyncReadStateReqEx(self._port, self._adr)
         else:
             return adsSyncReadStateReq(self._adr)
@@ -422,7 +422,7 @@ class Connection(object):
             ADS-interface are defined in the ADS-specification.
 
         """
-        if linux:
+        if extended:
             return adsSyncWriteControlReqEx(self._port, self._adr, ads_state,
                                             device_state, data, plc_datatype)
         else:
@@ -436,7 +436,7 @@ class Connection(object):
         :return: device name, version
 
         """
-        if linux:
+        if extended:
             return adsSyncReadDeviceInfoReqEx(self._port, self._adr)
         else:
             return adsSyncReadDeviceInfoReq(self._adr)
@@ -453,7 +453,7 @@ class Connection(object):
             according to PLCTYPE constants
 
         """
-        if linux:
+        if extended:
             return adsSyncWriteReqEx(self._port, self._adr, index_group,
                                      index_offset, value, plc_datatype)
         else:
@@ -476,7 +476,7 @@ class Connection(object):
         :return: value: **value**
 
         """
-        if linux:
+        if extended:
             return adsSyncReadWriteReqEx2(self._port, self._adr, index_group,
                                           index_offset, plc_read_datatype,
                                           value, plc_write_datatype)
@@ -496,7 +496,7 @@ class Connection(object):
         :return: value: **value**
 
         """
-        if linux:
+        if extended:
             return adsSyncReadReqEx2(self._port, self._adr, index_group,
                                      index_offset, plc_datatype)
         else:
@@ -512,7 +512,7 @@ class Connection(object):
         :return: value: **value**
 
         """
-        if linux:
+        if extended:
             return adsSyncReadByNameEx(self._port, self._adr, data_name,
                                        plc_datatype)
         else:
@@ -528,7 +528,7 @@ class Connection(object):
             according to PLCTYPE constants
 
         """
-        if linux:
+        if extended:
             return adsSyncWriteByNameEx(self._port, self._adr, data_name,
                                         value, plc_datatype)
         else:
@@ -581,7 +581,7 @@ class Connection(object):
             >>>     plc.del_device_notification(hnotification, huser)
 
         """
-        if linux:
+        if extended:
             notification_handle, user_handle = (
                 adsSyncAddDeviceNotificationReqEx(self._port, self._adr,
                                                   data_name, attr, callback,
@@ -605,7 +605,7 @@ class Connection(object):
         :param user_handle: user handle
 
         """
-        if linux:
+        if extended:
             adsSyncDelDeviceNotificationReqEx(self._port, self._adr,
                                               notification_handle, user_handle)
         else:
@@ -622,7 +622,7 @@ class Connection(object):
         return self._open
 
     def set_timeout(self, ms):
-        if linux:
+        if extended:
             adsSyncSetTimeoutEx(self._port, ms)
         else:
             adsSyncSetTimeout(ms)
